@@ -145,7 +145,7 @@ docs = tipe >> desc
                  ! A.style "display:none; float:right;"
                  ! A.href "javascript:toggleVerbose();"
                  ! A.title "Ctrl+H"
-                 $ "more"
+                 $ ""
 
       desc = H.div ! A.class_ "doc"
                    ! A.style "display:none;"
