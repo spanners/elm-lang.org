@@ -75,7 +75,7 @@ editor filePath code =
           Left err ->
               H.span ! A.style "font-family: monospace;" $
               mapM_ (\line -> preEscapedToMarkup (addSpaces line) >> H.br) (lines err)
-        H.script ! A.type_ "text/javascript" $ "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, { reset:[] });"
+        H.script ! A.type_ "text/javascript" $ "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, {});"
   where src = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
 
 bar :: AttributeValue -> Html -> Html
