@@ -8,6 +8,12 @@ import qualified Text.Blaze.Html5.Attributes as A
 import Network.HTTP.Base (urlEncode)
 import qualified System.FilePath as FP
 
+import qualified Elm.Internal.Utils as Elm
+import Data.Maybe (fromMaybe)
+
+import Generate (addSpaces)
+
+
 -- | Display an editor and the compiled result side-by-side.
 ide :: String -> FilePath -> String -> Html
 ide cols fileName code =
@@ -51,6 +57,7 @@ editor filePath code =
         H.script ! A.type_ "text/javascript" ! A.src "/misc/showdown.js" $ mempty
         H.script ! A.type_ "text/javascript" ! A.src "/misc/editor.js?0.11" $ mempty
       H.body $ do
+        H.div ! A.id "elm-moose" $ ""
         H.form ! A.id "inputForm" ! A.action "/compile" ! A.method "post" ! A.target "output" $ do
            H.div ! A.id "editor_box" $
              H.textarea ! A.name "input" ! A.id "input" $ toHtml ('\n':code)
@@ -59,6 +66,17 @@ editor filePath code =
              bar "editor_options" editorOptions
              bar "always_on" (buttons >> options)
         H.script ! A.type_ "text/javascript" $ "initEditor();"
+        let js = H.script ! A.type_ "text/javascript"
+            elmname = "Elm." ++ fromMaybe "Main" (Elm.moduleName src)
+        js ! A.src (H.toValue ("/elm-runtime.js?0.11" :: String)) $ ""
+        case Elm.compile src of
+          Right jsSrc -> do
+              js $ preEscapedToMarkup jsSrc
+          Left err ->
+              H.span ! A.style "font-family: monospace;" $
+              mapM_ (\line -> preEscapedToMarkup (addSpaces line) >> H.br) (lines err)
+        H.script ! A.type_ "text/javascript" $ "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, { reset:[] });"
+  where src = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
 
 bar :: AttributeValue -> Html -> Html
 bar id' body = H.div ! A.id id' ! A.class_ "option" $ body

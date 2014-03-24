@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Generate (html, js) where
+module Generate (html, js, addSpaces) where
 
 import Data.Maybe (fromMaybe)
 import Text.Blaze (preEscapedToMarkup)
