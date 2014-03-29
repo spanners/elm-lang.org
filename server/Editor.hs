@@ -42,6 +42,12 @@ themes = [ "ambiance", "blackboard", "cobalt", "eclipse"
          , "elegant", "erlang-dark", "lesser-dark", "monokai", "neat", "night"
          , "rubyblue", "solarized", "twilight", "vibrant-ink", "xq-dark" ]
 
+jsFiles :: [AttributeValue]
+jsFiles = [ "/codemirror-3.x/lib/codemirror.js"
+          , "/codemirror-3.x/mode/elm/elm.js"
+          , "/misc/showdown.js"
+          , "/misc/editor.js?0.11" ]
+
 
 -- | Create an HTML document that allows you to edit and submit Elm code
 --   for compilation.
@@ -51,12 +57,9 @@ editor filePath code =
       H.head $ do
         H.title . toHtml $ "Elm Editor: " ++ FP.takeBaseName filePath
         H.link ! A.rel "stylesheet" ! A.href "/codemirror-3.x/lib/codemirror.css"
-        js "/codemirror-3.x/lib/codemirror.js"
-        js "/codemirror-3.x/mode/elm/elm.js"
         mapM_ (\theme -> H.link ! A.rel "stylesheet" ! A.href (toValue ("/codemirror-3.x/theme/" ++ theme ++ ".css" :: String))) themes
         H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/editor.css"
-        js "/misc/showdown.js"
-        js "/misc/editor.js?0.11"
+        mapM_ script jsFiles
       H.body $ do
         H.div ! A.id "elm-moose" $ ""
         H.form ! A.id "inputForm" ! A.action "/compile" ! A.method "post" ! A.target "output" $ do
@@ -67,7 +70,7 @@ editor filePath code =
              bar "editor_options" editorOptions
              bar "always_on" (buttons >> options)
         embed "initEditor();"
-        js "/elm-runtime.js?0.11"
+        script "/elm-runtime.js?0.11"
         case Elm.compile src of
           Right jsSrc -> do
               embed $ preEscapedToMarkup jsSrc
@@ -76,8 +79,8 @@ editor filePath code =
               mapM_ (\line -> preEscapedToMarkup (addSpaces line) >> H.br) (lines err)
         embed "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, {});"
   where src = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
-        js file = H.script ! A.type_ "text/javascript" ! A.src file $ mempty
-        embed code = H.script ! A.type_ "text/javascript" $ code
+        script jsFile = H.script ! A.type_ "text/javascript" ! A.src jsFile $ mempty
+        embed jsCode = H.script ! A.type_ "text/javascript" $ jsCode
 
 bar :: AttributeValue -> Html -> Html
 bar id' body = H.div ! A.id id' ! A.class_ "option" $ body
