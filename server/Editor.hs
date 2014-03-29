@@ -42,6 +42,7 @@ themes = [ "ambiance", "blackboard", "cobalt", "eclipse"
          , "elegant", "erlang-dark", "lesser-dark", "monokai", "neat", "night"
          , "rubyblue", "solarized", "twilight", "vibrant-ink", "xq-dark" ]
 
+
 -- | Create an HTML document that allows you to edit and submit Elm code
 --   for compilation.
 editor :: FilePath -> String -> Html
@@ -50,12 +51,12 @@ editor filePath code =
       H.head $ do
         H.title . toHtml $ "Elm Editor: " ++ FP.takeBaseName filePath
         H.link ! A.rel "stylesheet" ! A.href "/codemirror-3.x/lib/codemirror.css"
-        H.script ! A.src "/codemirror-3.x/lib/codemirror.js" $ mempty
-        H.script ! A.src "/codemirror-3.x/mode/elm/elm.js" $ mempty
+        js "/codemirror-3.x/lib/codemirror.js"
+        js "/codemirror-3.x/mode/elm/elm.js"
         mapM_ (\theme -> H.link ! A.rel "stylesheet" ! A.href (toValue ("/codemirror-3.x/theme/" ++ theme ++ ".css" :: String))) themes
         H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/editor.css"
-        H.script ! A.type_ "text/javascript" ! A.src "/misc/showdown.js" $ mempty
-        H.script ! A.type_ "text/javascript" ! A.src "/misc/editor.js?0.11" $ mempty
+        js "/misc/showdown.js"
+        js "/misc/editor.js?0.11"
       H.body $ do
         H.div ! A.id "elm-moose" $ ""
         H.form ! A.id "inputForm" ! A.action "/compile" ! A.method "post" ! A.target "output" $ do
@@ -65,18 +66,18 @@ editor filePath code =
              bar "documentation" docs
              bar "editor_options" editorOptions
              bar "always_on" (buttons >> options)
-        H.script ! A.type_ "text/javascript" $ "initEditor();"
-        let js = H.script ! A.type_ "text/javascript"
-            elmname = "Elm." ++ fromMaybe "Main" (Elm.moduleName src)
-        js ! A.src (H.toValue ("/elm-runtime.js?0.11" :: String)) $ ""
+        embed "initEditor();"
+        js "/elm-runtime.js?0.11"
         case Elm.compile src of
           Right jsSrc -> do
-              js $ preEscapedToMarkup jsSrc
+              embed $ preEscapedToMarkup jsSrc
           Left err ->
               H.span ! A.style "font-family: monospace;" $
               mapM_ (\line -> preEscapedToMarkup (addSpaces line) >> H.br) (lines err)
-        H.script ! A.type_ "text/javascript" $ "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, {});"
+        embed "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, {});"
   where src = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
+        js file = H.script ! A.type_ "text/javascript" ! A.src file $ mempty
+        embed code = H.script ! A.type_ "text/javascript" $ code
 
 bar :: AttributeValue -> Html -> Html
 bar id' body = H.div ! A.id id' ! A.class_ "option" $ body
@@ -108,7 +109,6 @@ buttons = H.div ! A.class_ "valign_kids"
                         ! A.id "auto_hot_swap_checkbox"
                         ! A.onchange "setAutoHotSwap(this.checked)"
                         ! A.style "margin-right:20px;"
-
 
 options :: Html
 options = H.div ! A.class_ "valign_kids"
