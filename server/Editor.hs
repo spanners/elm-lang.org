@@ -71,16 +71,17 @@ editor filePath code =
              bar "always_on" (buttons >> options)
         embed "initEditor();"
         script "/elm-runtime.js?0.11"
-        case Elm.compile src of
+        case Elm.compile elmSrc of
           Right jsSrc -> do
               embed $ preEscapedToMarkup jsSrc
           Left err ->
               H.span ! A.style "font-family: monospace;" $
               mapM_ (\line -> preEscapedToMarkup (addSpaces line) >> H.br) (lines err)
         embed "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, {});"
-  where src = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
-        script jsFile = H.script ! A.type_ "text/javascript" ! A.src jsFile $ mempty
-        embed jsCode = H.script ! A.type_ "text/javascript" $ jsCode
+  where elmSrc = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
+        jsAttr = H.script ! A.type_ "text/javascript"
+        script jsFile = jsAttr ! A.src jsFile $ mempty
+        embed jsCode = jsAttr $ jsCode
 
 bar :: AttributeValue -> Html -> Html
 bar id' body = H.div ! A.id id' ! A.class_ "option" $ body
