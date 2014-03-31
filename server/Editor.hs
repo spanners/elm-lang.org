@@ -61,7 +61,6 @@ editor filePath code =
         H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/editor.css"
         mapM_ script jsFiles
       H.body $ do
-        H.div ! A.id "elm-moose" $ ""
         H.form ! A.id "inputForm" ! A.action "/compile" ! A.method "post" ! A.target "output" $ do
            H.div ! A.id "editor_box" $
              H.textarea ! A.name "input" ! A.id "input" $ toHtml ('\n':code)
@@ -77,7 +76,7 @@ editor filePath code =
           Left err ->
               H.span ! A.style "font-family: monospace;" $
               mapM_ (\line -> preEscapedToMarkup (addSpaces line) >> H.br) (lines err)
-        embed "var div = document.getElementById('elm-moose'); var moose = Elm.embed(Elm.Moose, div, {});"
+        embed "var div = document.getElementById('elm-moose'); var moose = Elm.fullscreen(Elm.Moose, {});"
   where elmSrc = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
         jsAttr = H.script ! A.type_ "text/javascript"
         script jsFile = jsAttr ! A.src jsFile $ mempty
