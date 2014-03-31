@@ -14,13 +14,6 @@ a:hover {text-decoration: underline; color: rgb(234,21,122);}
 .zoom-150 { font-size: 150%; }
 .zoom-200 { font-size: 200%; }
 
-#elm-moose {
-    width:  400px;
-    height: 400px;
-    background-color: white;
-    border: 1px solid #babdb6;
-}
-
 #editor_box {
     position: absolute;
     left: 0;
