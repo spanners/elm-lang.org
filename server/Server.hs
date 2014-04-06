@@ -66,6 +66,16 @@ error404 =
 serveElm :: FilePath -> Snap ()
 serveElm = serveFileAs "text/html; charset=UTF-8"
 
+newServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
+newServeHtml (html, Just err) =
+    do liftIO $ writeFile "foo.txt" err  
+       setContentType "text/html" <$> getResponse
+       writeLBS (BlazeBS.renderHtml html)
+newServeHtml (html, Nothing) =
+    do setContentType "text/html" <$> getResponse
+       writeLBS (BlazeBS.renderHtml html)
+
+
 serveHtml :: MonadSnap m => H.Html -> m ()
 serveHtml html =
     do setContentType "text/html" <$> getResponse
@@ -81,7 +91,7 @@ hotswap = maybe error404 serve =<< getParam "input"
 compile :: Snap ()
 compile = maybe error404 serve =<< getParam "input"
     where
-      serve = serveHtml . Generate.html "Compiled Elm" . BSC.unpack
+      serve = newServeHtml . Generate.newHtml "Compiled Elm" . BSC.unpack
 
 edit :: Snap ()
 edit = do
