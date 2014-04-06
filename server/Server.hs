@@ -68,7 +68,9 @@ serveElm = serveFileAs "text/html; charset=UTF-8"
 
 newServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
 newServeHtml (html, Just err) =
-    do liftIO $ writeFile "foo.txt" err  
+    do 
+       timeStamp <- liftIO $ readProcess "date" ["--rfc-3339=ns"] ""
+       liftIO $ appendFile "foo.txt" $ "{\"" ++ (init timeStamp) ++ "\"," ++ (show (lines err)) ++ "},"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
 newServeHtml (html, Nothing) =
