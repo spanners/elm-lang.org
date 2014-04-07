@@ -69,16 +69,7 @@ editor filePath code =
              bar "editor_options" editorOptions
              bar "always_on" (buttons >> options)
         embed "initEditor();"
-        script "/elm-runtime.js?0.11"
-        case Elm.compile elmSrc of
-          Right jsSrc -> do
-              embed $ preEscapedToMarkup jsSrc
-          Left err ->
-              H.span ! A.style "font-family: monospace;" $
-              mapM_ (\line -> preEscapedToMarkup (addSpaces line) >> H.br) (lines err)
-        embed "var div = document.getElementById('elm-moose'); var moose = Elm.fullscreen(Elm.Moose, {});"
-  where elmSrc = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
-        jsAttr = H.script ! A.type_ "text/javascript"
+  where jsAttr = H.script ! A.type_ "text/javascript"
         script jsFile = jsAttr ! A.src jsFile $ mempty
         embed jsCode = jsAttr $ jsCode
 

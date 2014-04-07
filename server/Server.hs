@@ -68,9 +68,9 @@ error404 =
 serveElm :: FilePath -> Snap ()
 serveElm = serveFileAs "text/html; charset=UTF-8"
 
-newServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
-newServeHtml (html, Nothing)  = serveHtml html
-newServeHtml (html, Just err) =
+logAndServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
+logAndServeHtml (html, Nothing)  = serveHtml html
+logAndServeHtml (html, Just err) =
     do timeStamp <- liftIO $ readProcess "date" ["--rfc-3339=ns"] ""
        liftIO $ appendFile "foo.txt" $ "{\"" ++ (init timeStamp) ++ "\"," ++ (show (lines err)) ++ "},"
        setContentType "text/html" <$> getResponse
@@ -97,15 +97,15 @@ hotswap = maybe error404 serve =<< getParam "input"
 compile :: Snap ()
 compile = maybe error404 serve =<< getParam "input"
     where
-      serve = newServeHtml . Generate.newHtml "Compiled Elm" . BSC.unpack
+      serve = logAndServeHtml . Generate.logAndHtml "Compiled Elm" . BSC.unpack
 
 edit :: Snap ()
 edit = do
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
-  newWithFile (Editor.ide cols)
+  withFile (Editor.ide cols)
 
 code :: Snap ()
-code = withFile Editor.editor
+code = embedWithFile Editor.editor
 
 embedee :: String -> H.Html
 embedee elmSrc =
@@ -118,16 +118,15 @@ embedee elmSrc =
             H.span ! A.style "font-family: monospace;" $
             mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
       embed "var div = document.getElementById('elm-moose'); var moose = Elm.fullscreen(Elm.Moose, {});"
-  where -- elmSrc = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
-      jsAttr = H.script ! A.type_ "text/javascript"
-      script jsFile = jsAttr ! A.src jsFile $ mempty
-      embed jsCode = jsAttr $ jsCode
+  where jsAttr = H.script ! A.type_ "text/javascript"
+        script jsFile = jsAttr ! A.src jsFile $ mempty
+        embed jsCode = jsAttr $ jsCode
 
 embedMe :: String -> H.Html -> H.Html
 embedMe elmSrc target = target >> (embedee elmSrc)
 
-newWithFile :: (FilePath -> String -> H.Html) -> Snap ()
-newWithFile handler = do
+embedWithFile :: (FilePath -> String -> H.Html) -> Snap ()
+embedWithFile handler = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
   let file = "public/" ++ path         
   exists <- liftIO (doesFileExist file)
@@ -135,7 +134,6 @@ newWithFile handler = do
       do content <- liftIO $ readFile file
          embedHtml $ handler path content
     
-
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
   path <- BSC.unpack . rqPathInfo <$> getRequest

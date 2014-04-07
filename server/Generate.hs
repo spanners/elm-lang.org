@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Generate (newHtml, html, js, addSpaces) where
+module Generate (logAndHtml, html, js, addSpaces) where
 
 import Data.Maybe (fromMaybe)
 import Text.Blaze (preEscapedToMarkup)
@@ -10,8 +10,8 @@ import qualified Text.Blaze.Html5.Attributes as A
 import qualified Elm.Internal.Utils as Elm
 import Utils
 
-newHtml :: String -> String -> (H.Html, Maybe String)
-newHtml name src =
+logAndHtml :: String -> String -> (H.Html, Maybe String)
+logAndHtml name src =
     let elmname = "Elm." ++ fromMaybe "Main" (Elm.moduleName src) 
     in
       case Elm.compile src of
