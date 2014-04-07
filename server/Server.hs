@@ -2,9 +2,11 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable #-}
 module Main where
 
+import Data.Monoid (mempty)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.HashMap.Strict as Map
+import qualified Elm.Internal.Utils as Elm
 import Control.Applicative
 import Control.Monad.Error
 
@@ -67,16 +69,18 @@ serveElm :: FilePath -> Snap ()
 serveElm = serveFileAs "text/html; charset=UTF-8"
 
 newServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
+newServeHtml (html, Nothing)  = serveHtml html
 newServeHtml (html, Just err) =
-    do 
-       timeStamp <- liftIO $ readProcess "date" ["--rfc-3339=ns"] ""
+    do timeStamp <- liftIO $ readProcess "date" ["--rfc-3339=ns"] ""
        liftIO $ appendFile "foo.txt" $ "{\"" ++ (init timeStamp) ++ "\"," ++ (show (lines err)) ++ "},"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
-newServeHtml (html, Nothing) =
-    do setContentType "text/html" <$> getResponse
-       writeLBS (BlazeBS.renderHtml html)
 
+embedHtml :: MonadSnap m => H.Html -> m ()
+embedHtml html =
+    do elmSrc <- liftIO $ readFile "EmbedMe.elm"
+       setContentType "text/html" <$> getResponse
+       writeLBS (BlazeBS.renderHtml (embedMe elmSrc html))
 
 serveHtml :: MonadSnap m => H.Html -> m ()
 serveHtml html =
@@ -102,6 +106,36 @@ edit = do
 
 code :: Snap ()
 code = withFile Editor.editor
+
+embedee :: String -> H.Html
+embedee elmSrc =
+    H.div $ do
+      script "/elm-runtime.js?0.11"
+      case Elm.compile elmSrc of
+        Right jsSrc -> do
+            embed $ H.preEscapedToMarkup jsSrc
+        Left err ->
+            H.span ! A.style "font-family: monospace;" $
+            mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
+      embed "var div = document.getElementById('elm-moose'); var moose = Elm.fullscreen(Elm.Moose, {});"
+  where -- elmSrc = "module Moose where\nimport Mouse\nmain = lift asText Mouse.position"
+      jsAttr = H.script ! A.type_ "text/javascript"
+      script jsFile = jsAttr ! A.src jsFile $ mempty
+      embed jsCode = jsAttr $ jsCode
+
+embedMe :: String -> H.Html -> H.Html
+embedMe elmSrc target = target >> (embedee elmSrc)
+
+newWithFile :: (FilePath -> String -> H.Html) -> Snap ()
+newWithFile handler = do
+  path <- BSC.unpack . rqPathInfo <$> getRequest
+  let file = "public/" ++ path         
+  exists <- liftIO (doesFileExist file)
+  if not exists then error404 else
+      do 
+         content <- liftIO $ readFile file
+         embedHtml $ handler path content
+    
 
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
