@@ -102,7 +102,7 @@ compile = maybe error404 serve =<< getParam "input"
 edit :: Snap ()
 edit = do
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
-  withFile (Editor.ide cols)
+  newWithFile (Editor.ide cols)
 
 code :: Snap ()
 code = withFile Editor.editor
@@ -132,8 +132,7 @@ newWithFile handler = do
   let file = "public/" ++ path         
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
-      do 
-         content <- liftIO $ readFile file
+      do content <- liftIO $ readFile file
          embedHtml $ handler path content
     
 
