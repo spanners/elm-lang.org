@@ -111,6 +111,7 @@ embedee :: String -> H.Html
 embedee elmSrc =
     H.div $ do
       script "/elm-runtime.js?0.11"
+      script "http://cdn.firebase.com/v0/firebase.js"
       case Elm.compile elmSrc of
         Right jsSrc -> do
             embed $ H.preEscapedToMarkup jsSrc
@@ -118,6 +119,7 @@ embedee elmSrc =
             H.span ! A.style "font-family: monospace;" $
             mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
       embed "var div = document.getElementById('elm-moose'); var moose = Elm.fullscreen(Elm.Moose, {});"
+      script "/moose.js"
   where jsAttr = H.script ! A.type_ "text/javascript"
         script jsFile = jsAttr ! A.src jsFile $ mempty
         embed jsCode = jsAttr $ jsCode
