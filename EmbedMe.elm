@@ -35,7 +35,7 @@ main = lift2 scene Window.dimensions clickLocations
 port count : Signal Int
 port count = length <~ clickLocations
 
-firebaseRequest requestType requestData = Http.request requestType "https://spanners.firebaseio-demo.com/dissertation" requestData []
+firebaseRequest requestType requestData = Http.request requestType "https://sweltering-fire-9141.firebaseio.com/dissertation.json" requestData []
 
  
 serialize r = r |> JEXP.fromRecord |> Json.fromJSObject |> Json.toJSString " " |> JS.toString

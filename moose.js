@@ -1,4 +1,4 @@
-var firebaseData = new Firebase('https://spanners.firebaseio-demo.com/dissertation');
+var firebaseData = new Firebase('https://sweltering-fire-9141.firebaseio.com/dissertation');
 var stamps = Elm.fullscreen(Elm.Moose, {});
 var currentCount = document.getElementById('current-count'),
     totalCount   = document.getElementById('total-count'),
