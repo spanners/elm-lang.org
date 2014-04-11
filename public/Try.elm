@@ -1,6 +1,4 @@
-import Website.Message (report)
-
-main = report [markdown|
+main = [markdown|
 <style type="text/css">p { text-align:justify; }</style>
 
 # Try Elm

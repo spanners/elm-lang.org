@@ -14,7 +14,6 @@ import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html.Renderer.Utf8 as BlazeBS
-import qualified Text.Blaze.Html.Renderer.String as BlazeS
 
 import Snap.Core
 import Snap.Http.Server
@@ -48,13 +47,12 @@ main = do
   precompile
   cargs <- cmdArgs flags
   httpServe (setPort (port cargs) defaultConfig) $
-      ifTop (serveElm "public/build/Elm.elm")
+      ifTop (serveElm "public/Empty.elm")
       <|> route [ ("try", serveHtml Editor.empty)
                 , ("edit", edit)
                 , ("code", code)
                 , ("compile", compile)
                 , ("hotswap", hotswap)
-                , ("login", login)
                 ]
       <|> serveDirectoryWith directoryConfig "public/build"
       <|> serveDirectoryWith simpleDirectoryConfig "resources"
@@ -72,7 +70,7 @@ logAndServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
 logAndServeHtml (html, Nothing)  = serveHtml html
 logAndServeHtml (html, Just err) =
     do timeStamp <- liftIO $ readProcess "date" ["--rfc-3339=ns"] ""
-       liftIO $ appendFile "foo.txt" $ "{\"" ++ (init timeStamp) ++ "\"," ++ (show (lines err)) ++ "},"
+       liftIO $ appendFile "error_log.json" $ "{\"" ++ (init timeStamp) ++ "\"," ++ (show (lines err)) ++ "},"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
 
@@ -142,17 +140,6 @@ withFile handler = do
       do content <- liftIO $ readFile file
          serveHtml $ handler path content
 
--- | Simple response for form-validation demo.
-login :: Snap ()
-login = do
-  first <- maybe "John" id <$> getQueryParam "first"
-  last' <- maybe "Doe" id <$> getQueryParam "last"
-  email <- maybe "john.doe@example.com" id <$> getQueryParam "email"
-  writeBS $ BS.concat [ "Hello, ", first, " ", last'
-                      , "! Welcome to the fake login-confirmation page.\n\n"
-                      , "We will not attempt to contact you at ", email
-                      , ".\nIn fact, your (fake?) email has not even been recorded." ]
-
 directoryConfig :: MonadSnap m => DirectoryConfig m
 directoryConfig =
     fancyDirectoryConfig
@@ -214,7 +201,7 @@ adjustHtmlFile file =
   do src <- BSC.readFile file
      let (before, after) = BSC.breakSubstring "<title>" src
      BSC.writeFile (FP.replaceExtension file "elm") $
-        BSC.concat [before, style, after, analytics]
+        BSC.concat [before, style, after]
      removeFile file
 
 style :: BSC.ByteString
@@ -228,17 +215,3 @@ style =
     \  p, li { font-size: 14px !important;\n\
     \          line-height: 1.5em !important; }\n\
     \</style>"
-
--- | Add analytics to a page.
-analytics :: BSC.ByteString
-analytics = BSC.pack . BlazeS.renderHtml $
-    H.script ! A.type_ "text/javascript" $
-         "var _gaq = _gaq || [];\n\
-         \_gaq.push(['_setAccount', 'UA-25827182-1']);\n\
-         \_gaq.push(['_setDomainName', 'elm-lang.org']);\n\
-         \_gaq.push(['_trackPageview']);\n\
-         \(function() {\n\
-         \  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;\n\
-         \  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';\n\
-         \  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);\n\
-         \})();"
