@@ -1,11 +1,14 @@
-# Template for creating Elm websites
+# Performing User Studies with the Elm IDE
 
-This project contains all of the source files used to create
-[elm-lang.org](http://elm-lang.org/). It provides a server and general
-structure for creating *your own* Elm website. The server lets you mix
-Elm, images, videos, HTML/CSS/JS, and whatever else you need.
+This project extends the elm-lang.org IDE with the ability to embed arbitrary Elm code in the editor pane.
 
-You can also use this to run [elm-lang.org/try](http://elm-lang.org/try) locally.
+I have done this for a personal project -- my [undergraduate dissertation](https://github.com/spanners/dissertation).
+
+EmbedMe.elm shows an example of some Elm code embedded in the editor pane that tracks the user's mouse position on mouse-down, which can be useful to model user behaviour during the activity of programming.
+
+## NB: A lot of this code is by [Evan Czaplicki](https://github.com/evancz)
+
+I merely extended it to add embedding Elm code in the editor, and input logging
 
 ### Set up
 
@@ -15,7 +18,7 @@ First make sure that you have the Elm compiler installed
 Then follow these steps to get the website running locally:
 
 ```bash
-git clone https://github.com/evancz/elm-lang.org.git
+git clone https://github.com/spanners/elm-lang.org
 cd elm-lang.org
 cabal install --bindir=.
 ./run-elm-website
