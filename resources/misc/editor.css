@@ -18,7 +18,7 @@ a:hover {text-decoration: underline; color: rgb(234,21,122);}
     position: absolute;
     left: 0;
     right: 0;
-    top: 50;
+    top: 0;
 }
 
 #always_on { padding: 5px 0; }

@@ -60,6 +60,8 @@ editor filePath code =
         mapM_ (\theme -> H.link ! A.rel "stylesheet" ! A.href (toValue ("/codemirror-3.x/theme/" ++ theme ++ ".css" :: String))) themes
         H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/editor.css"
         mapM_ script jsFiles
+        script "/elm-runtime.js?0.11"
+        script "http://cdn.firebase.com/v0/firebase.js"
       H.body $ do
         H.form ! A.id "inputForm" ! A.action "/compile" ! A.method "post" ! A.target "output" $ do
            H.div ! A.id "editor_box" $
