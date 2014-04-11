@@ -51,6 +51,7 @@ main = do
       ifTop (serveElm "public/Empty.elm")
       <|> route [ ("try", serveHtml Editor.empty)
                 , ("edit", edit)
+                , ("_edit", jsEdit) 
                 , ("code", code)
                 , ("compile", compile)
                 , ("hotswap", hotswap)
@@ -98,13 +99,26 @@ compile = maybe error404 serve =<< getParam "input"
     where
       serve = logAndServeHtml . Generate.logAndHtml "Compiled Elm" . BSC.unpack
 
+jsCompile :: Snap ()
+jsCompile = maybe error404 serve =<< getParam "input"
+    where
+      serve = logAndServeJS . Generate.logAndJS "Compiled JS" . BSC.unpack
+
 edit :: Snap ()
 edit = do
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
   withFile (Editor.ide cols)
 
+jsEdit :: Snap ()
+jsEdit = do
+  cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
+  withFile (JSEditor.ide cols)
+
 code :: Snap ()
 code = embedWithFile Editor.editor
+
+jsCode :: Snap ()
+jsCode = embedWithFile JSEditor.editor
 
 embedee :: String -> H.Html
 embedee elmSrc =
