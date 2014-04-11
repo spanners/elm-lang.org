@@ -14,6 +14,7 @@ import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html.Renderer.Utf8 as BlazeBS
+import Text.Regex
 
 import Snap.Core
 import Snap.Http.Server
@@ -110,12 +111,14 @@ embedee elmSrc =
     H.span $ do
       case Elm.compile elmSrc of
         Right jsSrc -> do
-            embed $ H.preEscapedToMarkup jsSrc
+            embed $ H.preEscapedToMarkup (subRegex oldID jsSrc newID)
         Left err ->
             H.span ! A.style "font-family: monospace;" $
             mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
       script "/moose.js"
-  where jsAttr = H.script ! A.type_ "text/javascript"
+  where oldID = mkRegex "var id = 1;"
+        newID = "var id = Date.now();"
+        jsAttr = H.script ! A.type_ "text/javascript"
         script jsFile = jsAttr ! A.src jsFile $ mempty
         embed jsCode = jsAttr $ jsCode
 

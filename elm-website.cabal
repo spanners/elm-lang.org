@@ -36,6 +36,7 @@ executable run-elm-website
                      , mtl
                      , process
                      , unordered-containers
+                     , regex-compat
 
   hs-source-dirs:      server
   default-language:    Haskell2010
