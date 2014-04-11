@@ -116,8 +116,8 @@ embedee elmSrc =
             H.span ! A.style "font-family: monospace;" $
             mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
       script "/moose.js"
-  where oldID = mkRegex "var id = 1;"
-        newID = "var id = Date.now();"
+  where oldID = mkRegex "var user_id = \"1\";"
+        newID = "var user_id = Date.now()+'';"
         jsAttr = H.script ! A.type_ "text/javascript"
         script jsFile = jsAttr ! A.src jsFile $ mempty
         embed jsCode = jsAttr $ jsCode
