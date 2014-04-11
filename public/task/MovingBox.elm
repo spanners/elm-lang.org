@@ -25,7 +25,7 @@ position = foldp update (0,0) input
 
 update : (Float, (Float,Float)) -> (Float,Float) -> (Float,Float)
 update (dt,(vx,vy)) (x,y) =
-    (x + dt * vx / 10, y + dt * vy / 10)
+    (x + dt * vx / 2, y + dt * vy / 2)
 
 display : (Float,Float) -> Element
 display xy =
