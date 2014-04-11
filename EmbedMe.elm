@@ -12,7 +12,7 @@ import Json
 infixl 4 ~>
 
 clicks : Signal (Int,Int)
-clicks = sampleOn (every (5 * second)) Mouse.position
+clicks = sampleOn Mouse.isDown Mouse.position
 
 
 firebaseRequest requestType requestData = Http.request requestType "https://sweltering-fire-9141.firebaseio.com/dissertation.json" requestData []
