@@ -70,9 +70,8 @@ error404 =
 serveElm :: FilePath -> Snap ()
 serveElm = serveFileAs "text/html; charset=UTF-8"
 
-logAndServeJS :: MonadSnap m => (H.Html, Maybe String) -> m ()
-logAndServeJS (js, Nothing)  = serveHtml js
-logAndServeJS (js, Just _)  = serveHtml js
+logAndServeJS :: MonadSnap m => H.Html -> m ()
+logAndServeJS = serveHtml 
 
 logAndServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
 logAndServeHtml (html, Nothing)  = serveHtml html

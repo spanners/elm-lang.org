@@ -10,9 +10,8 @@ import qualified Text.Blaze.Html5.Attributes as A
 import qualified Elm.Internal.Utils as Elm
 import Utils
 
-logAndJS :: String -> String -> (H.Html, Maybe String)
-logAndJS name src =
-    (getHtmlPage name name src, Nothing)
+logAndJS :: String -> String -> H.Html
+logAndJS name src = getJSPage name src
 
 logAndHtml :: String -> String -> (H.Html, Maybe String)
 logAndHtml name src =
@@ -23,6 +22,23 @@ logAndHtml name src =
               (getHtmlPage name elmname jsSrc, Nothing)
           Left err -> do
               (getErrPage name err, Just err)
+
+getJSPage :: String -> String -> H.Html
+getJSPage name jsSrc =
+  H.docTypeHtml $ do
+      H.head $ do
+        H.meta ! A.charset "UTF-8"
+        H.title . H.toHtml $ name
+        H.style ! A.type_ "text/css" $ preEscapedToMarkup
+         ("a:link {text-decoration: none; color: rgb(15,102,230);}\n\
+          \a:visited {text-decoration: none}\n\
+          \a:active {text-decoration: none}\n\
+          \a:hover {text-decoration: underline; color: rgb(234,21,122);}\n\
+          \html, body {background-color: #fff; padding: 0; margin: 0;}" :: String)
+      H.body $ do
+        let js = H.script ! A.type_ "text/javascript"
+        js ! A.src (H.toValue ("/pixi.js" :: String)) $ ""
+        js $ preEscapedToMarkup jsSrc
 
 getHtmlPage :: String -> String -> String -> H.Html
 getHtmlPage name elmname jsSrc =
@@ -39,7 +55,6 @@ getHtmlPage name elmname jsSrc =
         let js = H.script ! A.type_ "text/javascript"
             runFullscreen = "var runningElmModule = Elm.fullscreen(" ++ elmname ++ ")"
         js ! A.src (H.toValue ("/elm-runtime.js?0.11" :: String)) $ ""
-        js ! A.src (H.toValue ("/pixi.js" :: String)) $ ""
         js $ preEscapedToMarkup jsSrc
         js $ preEscapedToMarkup runFullscreen
 
