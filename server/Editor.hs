@@ -67,6 +67,12 @@ jsFiles = [ "/codemirror-3.x/lib/codemirror.js"
           , "/misc/showdown.js"
           , "/misc/editor.js?0.11" ]
 
+jsFiles2 :: [AttributeValue]
+jsFiles2 = [ "/codemirror-3.x/lib/codemirror.js"
+          , "/codemirror-3.x/mode/javascript/javascript.js"
+          , "/misc/showdown.js"
+          , "/misc/editor.js?0.11" ]
+
 jsEditor :: FilePath -> String -> Html
 jsEditor filePath code =
     H.html $ do
@@ -75,7 +81,7 @@ jsEditor filePath code =
         H.link ! A.rel "stylesheet" ! A.href "/codemirror-3.x/lib/codemirror.css"
         mapM_ (\theme -> H.link ! A.rel "stylesheet" ! A.href (toValue ("/codemirror-3.x/theme/" ++ theme ++ ".css" :: String))) themes
         H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/editor.css"
-        mapM_ script jsFiles
+        mapM_ script jsFiles2
         script "/elm-runtime.js?0.11"
         script "http://cdn.firebase.com/v0/firebase.js"
       H.body $ do
