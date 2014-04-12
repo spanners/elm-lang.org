@@ -94,6 +94,12 @@ embedHtml html =
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml (embedMe elmSrc html))
 
+embedHtmlTEST :: MonadSnap m => H.Html -> String -> m ()
+embedHtmlTEST html participant =
+    do elmSrc <- liftIO $ readFile "EmbedMe.elm"
+       setContentType "text/html" <$> getResponse
+       writeLBS (BlazeBS.renderHtml (embedMeTEST elmSrc html participant))
+
 serveHtml :: MonadSnap m => H.Html -> m ()
 serveHtml html =
     do setContentType "text/html" <$> getResponse
@@ -130,8 +136,7 @@ jsEdit = do
 code :: Snap ()
 code = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  liftIO $ appendFile "foo.txt" participant 
-  embedWithFile Editor.editor
+  embedWithFileTEST Editor.editor participant
 
 jsCode :: Snap ()
 jsCode = jsEmbedWithFile Editor.jsEditor
@@ -152,8 +157,27 @@ embedee elmSrc =
         script jsFile = jsAttr ! A.src jsFile $ mempty
         embed jsCode = jsAttr $ jsCode
 
+embedeeTEST :: String -> String -> H.Html
+embedeeTEST elmSrc participant =
+    H.span $ do
+      case Elm.compile elmSrc of
+        Right jsSrc -> do
+            embed $ H.preEscapedToMarkup (subRegex oldID jsSrc newID)
+        Left err ->
+            H.span ! A.style "font-family: monospace;" $
+            mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
+      script "/moose.js"
+  where oldID = mkRegex "var user_id = \"1\";"
+        newID = ("var user_id = " ++ participant ++ "+'';" :: String)
+        jsAttr = H.script ! A.type_ "text/javascript"
+        script jsFile = jsAttr ! A.src jsFile $ mempty
+        embed jsCode = jsAttr $ jsCode
+
 embedMe :: String -> H.Html -> H.Html
 embedMe elmSrc target = target >> (embedee elmSrc)
+
+embedMeTEST :: String -> H.Html -> String -> H.Html
+embedMeTEST elmSrc target participant = target >> (embedeeTEST elmSrc participant)
 
 jsEmbedWithFile :: (FilePath -> String -> H.Html) -> Snap ()
 jsEmbedWithFile handler = do
@@ -172,6 +196,15 @@ embedWithFile handler = do
   if not exists then error404 else
       do content <- liftIO $ readFile file
          embedHtml $ handler path content
+
+embedWithFileTEST :: (FilePath -> String -> H.Html) -> String -> Snap ()
+embedWithFileTEST handler participant = do
+  path <- BSC.unpack . rqPathInfo <$> getRequest
+  let file = "public/" ++ path         
+  exists <- liftIO (doesFileExist file)
+  if not exists then error404 else
+      do content <- liftIO $ readFile file
+         embedHtmlTEST (handler path content) participant
     
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
