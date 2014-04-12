@@ -81,6 +81,12 @@ logAndServeHtml (html, Just err) =
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
 
+embedJS :: MonadSnap m => H.Html -> m ()
+embedJS html =
+    do elmSrc <- liftIO $ readFile "EmbedMeJS.elm"
+       setContentType "text/html" <$> getResponse
+       writeLBS (BlazeBS.renderHtml (embedMe elmSrc html))
+
 embedHtml :: MonadSnap m => H.Html -> m ()
 embedHtml html =
     do elmSrc <- liftIO $ readFile "EmbedMe.elm"
@@ -123,7 +129,7 @@ code :: Snap ()
 code = embedWithFile Editor.editor
 
 jsCode :: Snap ()
-jsCode = embedWithFile Editor.jsEditor
+jsCode = jsEmbedWithFile Editor.jsEditor
 
 embedee :: String -> H.Html
 embedee elmSrc =
@@ -143,6 +149,15 @@ embedee elmSrc =
 
 embedMe :: String -> H.Html -> H.Html
 embedMe elmSrc target = target >> (embedee elmSrc)
+
+jsEmbedWithFile :: (FilePath -> String -> H.Html) -> Snap ()
+jsEmbedWithFile handler = do
+  path <- BSC.unpack . rqPathInfo <$> getRequest
+  let file = "public/" ++ path         
+  exists <- liftIO (doesFileExist file)
+  if not exists then error404 else
+      do content <- liftIO $ readFile file
+         embedJS $ handler path content
 
 embedWithFile :: (FilePath -> String -> H.Html) -> Snap ()
 embedWithFile handler = do

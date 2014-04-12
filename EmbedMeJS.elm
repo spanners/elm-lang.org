@@ -16,7 +16,7 @@ clicks = timestamp (sampleOn Mouse.isDown Mouse.position)
 
 user_id = "1"
 
-firebaseRequest requestType requestData = Http.request requestType ("https://sweltering-fire-9141.firebaseio.com/dissertation/elm/" ++ user_id ++ ".json") requestData []
+firebaseRequest requestType requestData = Http.request requestType ("https://sweltering-fire-9141.firebaseio.com/dissertation/js/" ++ user_id ++ ".json") requestData []
  
 serialize r = r |> JEXP.fromRecord |> Json.fromJSObject |> Json.toJSString " " |> JS.toString
  
