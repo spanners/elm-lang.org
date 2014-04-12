@@ -53,7 +53,9 @@ main = do
                 , ("edit", edit)
                 , ("_edit", jsEdit) 
                 , ("code", code)
+                , ("_code", jsCode)
                 , ("compile", compile)
+                , ("_compile", jsCompile)
                 , ("hotswap", hotswap)
                 ]
       <|> serveDirectoryWith directoryConfig "public/build"
@@ -67,6 +69,10 @@ error404 =
 
 serveElm :: FilePath -> Snap ()
 serveElm = serveFileAs "text/html; charset=UTF-8"
+
+logAndServeJS :: MonadSnap m => (H.Html, Maybe String) -> m ()
+logAndServeJS (js, Nothing)  = serveHtml js
+logAndServeJS (js, Just _)  = serveHtml js
 
 logAndServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
 logAndServeHtml (html, Nothing)  = serveHtml html
@@ -94,15 +100,15 @@ hotswap = maybe error404 serve =<< getParam "input"
           do setContentType "application/javascript" <$> getResponse
              writeBS . BSC.pack . Generate.js $ BSC.unpack code
 
-compile :: Snap ()
-compile = maybe error404 serve =<< getParam "input"
-    where
-      serve = logAndServeHtml . Generate.logAndHtml "Compiled Elm" . BSC.unpack
-
 jsCompile :: Snap ()
 jsCompile = maybe error404 serve =<< getParam "input"
     where
       serve = logAndServeJS . Generate.logAndJS "Compiled JS" . BSC.unpack
+
+compile :: Snap ()
+compile = maybe error404 serve =<< getParam "input"
+    where
+      serve = logAndServeHtml . Generate.logAndHtml "Compiled Elm" . BSC.unpack
 
 edit :: Snap ()
 edit = do
@@ -112,13 +118,13 @@ edit = do
 jsEdit :: Snap ()
 jsEdit = do
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
-  withFile (JSEditor.ide cols)
+  withFile (Editor.jsIde cols)
 
 code :: Snap ()
 code = embedWithFile Editor.editor
 
 jsCode :: Snap ()
-jsCode = embedWithFile JSEditor.editor
+jsCode = embedWithFile Editor.jsEditor
 
 embedee :: String -> H.Html
 embedee elmSrc =

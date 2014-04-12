@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Generate (logAndHtml, html, js, addSpaces) where
+module Generate (logAndJS, logAndHtml, html, js, addSpaces) where
 
 import Data.Maybe (fromMaybe)
 import Text.Blaze (preEscapedToMarkup)
@@ -10,6 +10,10 @@ import qualified Text.Blaze.Html5.Attributes as A
 import qualified Elm.Internal.Utils as Elm
 import Utils
 
+logAndJS :: String -> String -> (H.Html, Maybe String)
+logAndJS name src =
+    (getHtmlPage name name src, Nothing)
+
 logAndHtml :: String -> String -> (H.Html, Maybe String)
 logAndHtml name src =
     let elmname = "Elm." ++ fromMaybe "Main" (Elm.moduleName src) 
@@ -19,7 +23,6 @@ logAndHtml name src =
               (getHtmlPage name elmname jsSrc, Nothing)
           Left err -> do
               (getErrPage name err, Just err)
-
 
 getHtmlPage :: String -> String -> String -> H.Html
 getHtmlPage name elmname jsSrc =
@@ -36,6 +39,7 @@ getHtmlPage name elmname jsSrc =
         let js = H.script ! A.type_ "text/javascript"
             runFullscreen = "var runningElmModule = Elm.fullscreen(" ++ elmname ++ ")"
         js ! A.src (H.toValue ("/elm-runtime.js?0.11" :: String)) $ ""
+        js ! A.src (H.toValue ("/pixi.js" :: String)) $ ""
         js $ preEscapedToMarkup jsSrc
         js $ preEscapedToMarkup runFullscreen
 

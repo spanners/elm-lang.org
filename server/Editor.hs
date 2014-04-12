@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Editor (editor,ide,empty) where
+module Editor (editor,jsEditor,jsIde,ide,empty) where
 
 import Data.Monoid (mempty)
 import Text.Blaze.Html
@@ -15,6 +15,14 @@ import Generate (addSpaces)
 
 
 -- | Display an editor and the compiled result side-by-side.
+jsIde :: String -> FilePath -> String -> Html
+jsIde cols fileName code =
+    jsIdeBuilder cols
+               ("JS Editor: " ++ FP.takeBaseName fileName)
+               fileName
+               ("/_compile?input=" ++ urlEncode code)
+
+-- | Display an editor and the compiled result side-by-side.
 ide :: String -> FilePath -> String -> Html
 ide cols fileName code =
     ideBuilder cols
@@ -25,6 +33,17 @@ ide cols fileName code =
 -- | Display an editor and the compiled result side-by-side.
 empty :: Html
 empty = ideBuilder "50%,50%" "Try Elm" "Empty.elm" "/Try.elm"
+
+jsIdeBuilder :: String -> String -> String -> String -> Html
+jsIdeBuilder cols title input output =
+    H.docTypeHtml $ do
+      H.head . H.title . toHtml $ title
+      preEscapedToMarkup $ 
+         concat [ "<frameset cols=\"" ++ cols ++ "\">\n"
+                , "  <frame name=\"input\" src=\"/_code/", input, "\" />\n"
+                , "  <frame name=\"output\" src=\"", output, "\" />\n"
+                , "</frameset>" ]
+
 
 ideBuilder :: String -> String -> String -> String -> Html
 ideBuilder cols title input output =
@@ -48,6 +67,29 @@ jsFiles = [ "/codemirror-3.x/lib/codemirror.js"
           , "/misc/showdown.js"
           , "/misc/editor.js?0.11" ]
 
+jsEditor :: FilePath -> String -> Html
+jsEditor filePath code =
+    H.html $ do
+      H.head $ do
+        H.title . toHtml $ "JS Editor: " ++ FP.takeBaseName filePath
+        H.link ! A.rel "stylesheet" ! A.href "/codemirror-3.x/lib/codemirror.css"
+        mapM_ (\theme -> H.link ! A.rel "stylesheet" ! A.href (toValue ("/codemirror-3.x/theme/" ++ theme ++ ".css" :: String))) themes
+        H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/editor.css"
+        mapM_ script jsFiles
+        script "/elm-runtime.js?0.11"
+        script "http://cdn.firebase.com/v0/firebase.js"
+      H.body $ do
+        H.form ! A.id "inputForm" ! A.action "/_compile" ! A.method "post" ! A.target "output" $ do
+           H.div ! A.id "editor_box" $
+             H.textarea ! A.name "input" ! A.id "input" $ toHtml ('\n':code)
+           H.div ! A.id "options" $ do
+             bar "documentation" docs
+             bar "editor_options" editorOptions
+             bar "always_on" (buttons >> options)
+        embed "initEditor();"
+  where jsAttr = H.script ! A.type_ "text/javascript"
+        script jsFile = jsAttr ! A.src jsFile $ mempty
+        embed jsCode = jsAttr $ jsCode
 
 -- | Create an HTML document that allows you to edit and submit Elm code
 --   for compilation.
