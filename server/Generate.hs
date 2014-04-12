@@ -33,6 +33,7 @@ getJSPage name jsSrc =
         H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/js.css"
         script "/pixi.js"
       H.body $ do
+        H.div ! A.style "width: 400px; height: 400px; position: absolute; top: 0; left: 0; opacity: 0;" $ mempty
         jsAttr $ preEscapedToMarkup jsSrc
  where jsAttr = H.script ! A.type_ "text/javascript"
        script jsFile = jsAttr ! A.src jsFile $ mempty

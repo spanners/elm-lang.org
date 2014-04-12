@@ -15,7 +15,7 @@ document.body.appendChild(renderer.view);
 
 // Creating the box
 var box = new PIXI.Graphics();
-box.lineStyle(1, COLORS[1], 1);
+box.lineStyle(1, COLORS[0], 1);
 box.beginFill(COLORS[1], 0);
 box.drawRect(0, 0, SQUARE, SQUARE);
 box.endFill();
