@@ -119,9 +119,8 @@ compile = maybe error404 serve =<< getParam "input"
 edit :: Snap ()
 edit = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  liftIO $ appendFile "foo.txt" participant
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
-  withFile (Editor.ide cols)
+  withFile (Editor.ide cols participant) 
 
 jsEdit :: Snap ()
 jsEdit = do
@@ -129,7 +128,10 @@ jsEdit = do
   withFile (Editor.jsIde cols)
 
 code :: Snap ()
-code = embedWithFile Editor.editor
+code = do
+  participant <- BSC.unpack . maybe "" id <$> getParam "p"
+  liftIO $ appendFile "foo.txt" participant 
+  embedWithFile Editor.editor
 
 jsCode :: Snap ()
 jsCode = jsEmbedWithFile Editor.jsEditor

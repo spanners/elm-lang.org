@@ -23,16 +23,17 @@ jsIde cols fileName code =
                ("/_compile?input=" ++ urlEncode code)
 
 -- | Display an editor and the compiled result side-by-side.
-ide :: String -> FilePath -> String -> Html
-ide cols fileName code =
+ide :: String -> String -> FilePath -> String -> Html
+ide cols participant fileName code =
     ideBuilder cols
+               participant
                ("Elm Editor: " ++ FP.takeBaseName fileName)
                fileName
                ("/compile?input=" ++ urlEncode code)
 
 -- | Display an editor and the compiled result side-by-side.
 empty :: Html
-empty = ideBuilder "50%,50%" "Try Elm" "Empty.elm" "/Try.elm"
+empty = ideBuilder "50%,50%" "1" "Try Elm" "Empty.elm" "/Try.elm"
 
 jsIdeBuilder :: String -> String -> String -> String -> Html
 jsIdeBuilder cols title input output =
@@ -45,13 +46,13 @@ jsIdeBuilder cols title input output =
                 , "</frameset>" ]
 
 
-ideBuilder :: String -> String -> String -> String -> Html
-ideBuilder cols title input output =
+ideBuilder :: String -> String -> String -> String -> String -> Html
+ideBuilder cols participant title input output =
     H.docTypeHtml $ do
       H.head . H.title . toHtml $ title
       preEscapedToMarkup $ 
          concat [ "<frameset cols=\"" ++ cols ++ "\">\n"
-                , "  <frame name=\"input\" src=\"/code/", input, "\" />\n"
+                , "  <frame name=\"input\" src=\"/code/", input, "?p=", participant, "\" />\n"
                 , "  <frame name=\"output\" src=\"", output, "\" />\n"
                 , "</frameset>" ]
 
