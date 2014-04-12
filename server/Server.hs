@@ -83,7 +83,9 @@ logAndServeHtml (html, Just err) =
 
 embedJS :: MonadSnap m => H.Html -> m ()
 embedJS html =
-    do elmSrc <- liftIO $ readFile "EmbedMeJS.elm"
+    do participant <- BSC.unpack . maybe "" id <$> getParam "p"
+       liftIO $ writeFile "foo.txt" participant
+       elmSrc <- liftIO $ readFile "EmbedMeJS.elm"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml (embedMe elmSrc html))
 
