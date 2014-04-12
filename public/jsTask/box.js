@@ -9,7 +9,7 @@ var COLORS = [
 var MOVEMENT_SPEED = 5;
 
 // Setting up Pixi
-var stage = new PIXI.Stage(COLORS[0]);
+var stage = new PIXI.Stage(COLORS[1]);
 var renderer = PIXI.autoDetectRenderer(WIDTH, HEIGHT);
 document.body.appendChild(renderer.view);
 
