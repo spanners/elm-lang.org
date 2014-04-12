@@ -29,15 +29,10 @@ getJSPage name jsSrc =
       H.head $ do
         H.meta ! A.charset "UTF-8"
         H.title . H.toHtml $ name
-        H.style ! A.type_ "text/css" $ preEscapedToMarkup
-         ("a:link {text-decoration: none; color: rgb(15,102,230);}\n\
-          \a:visited {text-decoration: none}\n\
-          \a:active {text-decoration: none}\n\
-          \a:hover {text-decoration: underline; color: rgb(234,21,122);}\n\
-          \html, body {background-color: #fff; padding: 0; margin: 0;}" :: String)
+        H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/js.css"
+        js ! A.src (H.toValue ("/pixi.js" :: String)) $ ""
       H.body $ do
         let js = H.script ! A.type_ "text/javascript"
-        js ! A.src (H.toValue ("/pixi.js" :: String)) $ ""
         js $ preEscapedToMarkup jsSrc
 
 getHtmlPage :: String -> String -> String -> H.Html
