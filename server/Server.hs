@@ -83,8 +83,7 @@ logAndServeHtml (html, Just err) =
 
 embedJS :: MonadSnap m => H.Html -> m ()
 embedJS html =
-    do participant <- BSC.unpack . maybe "" id <$> getParam "p"
-       liftIO $ writeFile "foo.txt" participant
+    do 
        elmSrc <- liftIO $ readFile "EmbedMeJS.elm"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml (embedMe elmSrc html))
@@ -119,6 +118,8 @@ compile = maybe error404 serve =<< getParam "input"
 
 edit :: Snap ()
 edit = do
+  participant <- BSC.unpack . maybe "" id <$> getParam "p"
+  liftIO $ appendFile "foo.txt" participant
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
   withFile (Editor.ide cols)
 
