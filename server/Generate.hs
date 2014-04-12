@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Generate (logAndJS, logAndHtml, html, js, addSpaces) where
 
+import Data.Monoid (mempty)
 import Data.Maybe (fromMaybe)
 import Text.Blaze (preEscapedToMarkup)
 import Text.Blaze.Html5 ((!))
@@ -30,10 +31,12 @@ getJSPage name jsSrc =
         H.meta ! A.charset "UTF-8"
         H.title . H.toHtml $ name
         H.link ! A.rel "stylesheet" ! A.type_ "text/css" ! A.href "/misc/js.css"
-        js ! A.src (H.toValue ("/pixi.js" :: String)) $ ""
+        script "/pixi.js"
       H.body $ do
-        let js = H.script ! A.type_ "text/javascript"
-        js $ preEscapedToMarkup jsSrc
+        jsAttr $ preEscapedToMarkup jsSrc
+ where jsAttr = H.script ! A.type_ "text/javascript"
+       script jsFile = jsAttr ! A.src jsFile $ mempty
+       embed jsCode = jsAttr $ jsCode
 
 getHtmlPage :: String -> String -> String -> H.Html
 getHtmlPage name elmname jsSrc =
