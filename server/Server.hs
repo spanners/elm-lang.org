@@ -82,18 +82,18 @@ logAndServeHtml (html, Just err) =
        writeLBS (BlazeBS.renderHtml html)
 
 
-embedJSTEST :: MonadSnap m => H.Html -> String -> m ()
-embedJSTEST js participant =
+embedJS :: MonadSnap m => H.Html -> String -> m ()
+embedJS js participant =
     do 
        elmSrc <- liftIO $ readFile "EmbedMeJS.elm"
        setContentType "text/html" <$> getResponse
-       writeLBS (BlazeBS.renderHtml (embedMeTEST elmSrc js participant))
+       writeLBS (BlazeBS.renderHtml (embedMe elmSrc js participant))
 
-embedHtmlTEST :: MonadSnap m => H.Html -> String -> m ()
-embedHtmlTEST html participant =
+embedHtml :: MonadSnap m => H.Html -> String -> m ()
+embedHtml html participant =
     do elmSrc <- liftIO $ readFile "EmbedMe.elm"
        setContentType "text/html" <$> getResponse
-       writeLBS (BlazeBS.renderHtml (embedMeTEST elmSrc html participant))
+       writeLBS (BlazeBS.renderHtml (embedMe elmSrc html participant))
 
 serveHtml :: MonadSnap m => H.Html -> m ()
 serveHtml html =
@@ -132,15 +132,15 @@ jsEdit = do
 code :: Snap ()
 code = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  embedWithFileTEST Editor.editor participant
+  embedWithFile Editor.editor participant
 
 jsCode :: Snap ()
 jsCode = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  jsEmbedWithFileTEST Editor.jsEditor participant
+  jsEmbedWithFile Editor.jsEditor participant
 
-embedeeTEST :: String -> String -> H.Html
-embedeeTEST elmSrc participant =
+embedee :: String -> String -> H.Html
+embedee elmSrc participant =
     H.span $ do
       case Elm.compile elmSrc of
         Right jsSrc -> do
@@ -155,26 +155,26 @@ embedeeTEST elmSrc participant =
         script jsFile = jsAttr ! A.src jsFile $ mempty
         embed jsCode = jsAttr $ jsCode
 
-embedMeTEST :: String -> H.Html -> String -> H.Html
-embedMeTEST elmSrc target participant = target >> (embedeeTEST elmSrc participant)
+embedMe :: String -> H.Html -> String -> H.Html
+embedMe elmSrc target participant = target >> (embedee elmSrc participant)
 
-jsEmbedWithFileTEST :: (FilePath -> String -> H.Html) -> String -> Snap ()
-jsEmbedWithFileTEST handler participant = do
+jsEmbedWithFile :: (FilePath -> String -> H.Html) -> String -> Snap ()
+jsEmbedWithFile handler participant = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
   let file = "public/" ++ path         
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
-         embedJSTEST (handler path content) participant
+         embedJS (handler path content) participant
 
-embedWithFileTEST :: (FilePath -> String -> H.Html) -> String -> Snap ()
-embedWithFileTEST handler participant = do
+embedWithFile :: (FilePath -> String -> H.Html) -> String -> Snap ()
+embedWithFile handler participant = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
   let file = "public/" ++ path         
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
-         embedHtmlTEST (handler path content) participant
+         embedHtml (handler path content) participant
     
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
