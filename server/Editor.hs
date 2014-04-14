@@ -15,12 +15,13 @@ import Generate (addSpaces)
 
 
 -- | Display an editor and the compiled result side-by-side.
-jsIde :: String -> FilePath -> String -> Html
-jsIde cols fileName code =
+jsIde :: String -> String -> FilePath -> String -> Html
+jsIde cols participant fileName code =
     jsIdeBuilder cols
-               ("JS Editor: " ++ FP.takeBaseName fileName)
-               fileName
-               ("/_compile?input=" ++ urlEncode code)
+                 participant
+                 ("JS Editor: " ++ FP.takeBaseName fileName)
+                 fileName
+                 ("/_compile?input=" ++ urlEncode code)
 
 -- | Display an editor and the compiled result side-by-side.
 ide :: String -> String -> FilePath -> String -> Html
@@ -35,13 +36,13 @@ ide cols participant fileName code =
 empty :: Html
 empty = ideBuilder "50%,50%" "1" "Try Elm" "Empty.elm" "/Try.elm"
 
-jsIdeBuilder :: String -> String -> String -> String -> Html
-jsIdeBuilder cols title input output =
+jsIdeBuilder :: String -> String -> String -> String -> String -> Html
+jsIdeBuilder cols participant title input output =
     H.docTypeHtml $ do
       H.head . H.title . toHtml $ title
       preEscapedToMarkup $ 
          concat [ "<frameset cols=\"" ++ cols ++ "\">\n"
-                , "  <frame name=\"input\" src=\"/_code/", input, "\" />\n"
+                , "  <frame name=\"input\" src=\"/_code/", input, "?p=", participant, "\" />\n"
                 , "  <frame name=\"output\" src=\"", output, "\" />\n"
                 , "</frameset>" ]
 

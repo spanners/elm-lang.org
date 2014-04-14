@@ -81,6 +81,14 @@ logAndServeHtml (html, Just err) =
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
 
+
+embedJSTEST :: MonadSnap m => H.Html -> String -> m ()
+embedJSTEST js participant =
+    do 
+       elmSrc <- liftIO $ readFile "EmbedMeJS.elm"
+       setContentType "text/html" <$> getResponse
+       writeLBS (BlazeBS.renderHtml (embedMeTEST elmSrc js participant))
+
 embedJS :: MonadSnap m => H.Html -> m ()
 embedJS html =
     do 
@@ -130,8 +138,9 @@ edit = do
 
 jsEdit :: Snap ()
 jsEdit = do
+  participant <- BSC.unpack . maybe "" id <$> getParam "p"
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
-  withFile (Editor.jsIde cols)
+  withFile (Editor.jsIde cols participant)
 
 code :: Snap ()
 code = do
@@ -139,7 +148,9 @@ code = do
   embedWithFileTEST Editor.editor participant
 
 jsCode :: Snap ()
-jsCode = jsEmbedWithFile Editor.jsEditor
+jsCode = do
+  participant <- BSC.unpack . maybe "" id <$> getParam "p"
+  jsEmbedWithFileTEST Editor.jsEditor participant
 
 embedee :: String -> H.Html
 embedee elmSrc =
@@ -178,6 +189,15 @@ embedMe elmSrc target = target >> (embedee elmSrc)
 
 embedMeTEST :: String -> H.Html -> String -> H.Html
 embedMeTEST elmSrc target participant = target >> (embedeeTEST elmSrc participant)
+
+jsEmbedWithFileTEST :: (FilePath -> String -> H.Html) -> String -> Snap ()
+jsEmbedWithFileTEST handler participant = do
+  path <- BSC.unpack . rqPathInfo <$> getRequest
+  let file = "public/" ++ path         
+  exists <- liftIO (doesFileExist file)
+  if not exists then error404 else
+      do content <- liftIO $ readFile file
+         embedJSTEST (handler path content) participant
 
 jsEmbedWithFile :: (FilePath -> String -> H.Html) -> Snap ()
 jsEmbedWithFile handler = do
