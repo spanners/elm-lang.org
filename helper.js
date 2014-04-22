@@ -1,4 +1,4 @@
-var firebaseData = new Firebase('https://thsoft.firebaseio-demo.com/thisiselmstamps');
+var firebaseData = new Firebase('http://sweltering-fire-9141.firebaseio.com/dissertation/elm/1');
 var elm = Elm.fullscreen(Elm.StampTogether, {
 	stamped: {
 		t: 0,

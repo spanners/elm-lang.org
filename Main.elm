@@ -30,7 +30,11 @@ main = lift2 scene Window.dimensions stamps
 
 -- Outgoing
 
-firebaseRequest requestType requestData = Http.request requestType "https://thsoft.firebaseio-demo.com/thisiselmstamps.json" requestData []
+user_id = "1"
+
+firebaseRequest requestType requestData = Http.request requestType ("https://sweltering-fire-9141.firebaseio.com/dissertation/elm/" ++ user_id ++ ".json") requestData []
+
+
 
 serialize r = r |> JEXP.fromRecord |> Json.fromJSObject |> Json.toJSString " " |> JS.toString
 
