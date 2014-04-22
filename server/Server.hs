@@ -52,12 +52,12 @@ main = do
   httpServe (setPort (port cargs) defaultConfig) $
       ifTop (serveElm "public/Empty.elm")
       <|> route [ ("try", serveHtml Editor.empty)
-                , ("edit", edit)
-                , ("_edit", jsEdit) 
-                , ("code", code)
-                , ("_code", jsCode)
-                , ("compile", compile)
-                , ("_compile", jsCompile)
+                , ("edit", edit Elm)
+                , ("_edit", edit Javascript) 
+                , ("code", code Elm)
+                , ("_code", code Javascript)
+                , ("compile", compile Elm)
+                , ("_compile", compile Javascript)
                 , ("hotswap", hotswap)
                 ]
       <|> serveDirectoryWith directoryConfig "public/build"
@@ -86,17 +86,11 @@ logAndServeHtml (html, Just err) =
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
 
-
-embedJS :: MonadSnap m => H.Html -> String -> m ()
-embedJS js participant =
-    do 
-       elmSrc <- liftIO $ readFile "EmbedMeJS.elm"
-       setContentType "text/html" <$> getResponse
-       writeLBS (BlazeBS.renderHtml (embedMe elmSrc js participant))
-
-embedHtml :: MonadSnap m => H.Html -> String -> m ()
-embedHtml html participant =
-    do elmSrc <- liftIO $ readFile "EmbedMe.elm"
+embedHtml :: MonadSnap m => H.Html -> Lang -> String -> m ()
+embedHtml html lang participant =
+    do elmSrc <- liftIO $ case lang of 
+                               Elm -> readFile "EmbedMe.elm"
+                               Javascript -> readFile "EmbedMeJS.elm"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml (embedMe elmSrc html participant))
 
@@ -112,44 +106,34 @@ hotswap = maybe error404 serve =<< getParam "input"
           do setContentType "application/javascript" <$> getResponse
              writeBS . BSC.pack . Generate.js $ BSC.unpack code
 
-jsCompile :: Snap ()
-jsCompile = maybe error404 serve =<< getParam "input"
+compile :: Lang -> Snap ()
+compile lang = maybe error404 serve =<< getParam "input"
     where
-      serve = logAndServeJS . Generate.logAndJS "Compiled JS" . BSC.unpack
+      serve = case lang of 
+                   Elm -> logAndServeHtml . Generate.logAndHtml "Compiled Elm" . BSC.unpack
+                   Javascript -> logAndServeJS . Generate.logAndJS "Compiled JS" . BSC.unpack
 
-compile :: Snap ()
-compile = maybe error404 serve =<< getParam "input"
-    where
-      serve = logAndServeHtml . Generate.logAndHtml "Compiled Elm" . BSC.unpack
-
-edit :: Snap ()
-edit = do
+edit :: Lang -> Snap ()
+edit lang = do
   participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
   cols <- BSC.unpack . fromMaybe "50%,50%" <$> getQueryParam "cols"
-  withFile (Editor.ide Elm cols participant) 
+  case lang of
+       Elm -> withFile (Editor.ide Elm cols participant) 
+       Javascript -> withFile (Editor.ide Javascript cols participant)
 
-jsEdit :: Snap ()
-jsEdit = do
+code :: Lang -> Snap ()
+code lang = do
   participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
-  cols <- BSC.unpack . fromMaybe "50%,50%" <$> getQueryParam "cols"
-  withFile (Editor.ide Javascript cols participant)
-
-code :: Snap ()
-code = do
-  participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
-  embedWithFile Editor.editor Elm participant
-
-jsCode :: Snap ()
-jsCode = do
-  participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
-  embedWithFile Editor.editor Javascript participant
+  case lang of
+       Elm -> embedWithFile Editor.editor Elm participant
+       Javascript -> embedWithFile Editor.editor Javascript participant
 
 embedee :: String -> String -> H.Html
 embedee elmSrc participant =
     H.span $ do
       case Elm.compile elmSrc of
         Right jsSrc ->
-            embed $ H.preEscapedToMarkup (subRegex oldID jsSrc newID)
+            jsAttr $ H.preEscapedToMarkup (subRegex oldID jsSrc newID)
         Left err ->
             H.span ! A.style "font-family: monospace;" $
             mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
@@ -158,7 +142,6 @@ embedee elmSrc participant =
         newID = "var user_id = " ++ participant ++ "+'';"
         jsAttr = H.script ! A.type_ "text/javascript"
         script jsFile = jsAttr ! A.src jsFile $ mempty
-        embed = jsAttr
 
 embedMe :: String -> H.Html -> String -> H.Html
 embedMe elmSrc target participant = target >> embedee elmSrc participant
@@ -171,8 +154,8 @@ embedWithFile handler lang participant = do
   if not exists then error404 else
       do content <- liftIO $ readFile file
          case lang of
-              Elm -> embedHtml (handler lang path content) participant
-              Javascript -> embedJS (handler lang path content) participant
+              Elm -> embedHtml (handler lang path content) lang participant
+              Javascript -> embedHtml (handler lang path content) lang participant
     
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
