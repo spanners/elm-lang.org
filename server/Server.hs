@@ -88,9 +88,7 @@ logAndServeHtml (html, Just err) =
 
 embedHtml :: MonadSnap m => H.Html -> Lang -> String -> m ()
 embedHtml html lang participant =
-    do elmSrc <- liftIO $ case lang of
-                               Elm -> readFile "EmbedMeElm.elm"
-                               Javascript -> readFile "EmbedMeElm.elm"
+    do elmSrc <- liftIO $ readFile "EmbedMe.elm"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml (embedMe lang elmSrc html participant))
 
@@ -141,12 +139,14 @@ embedee lang elmSrc participant =
                       (Generate.addSpaces line)
                       >> H.br)
                   (lines err)
-      jsAttr $ H.preEscapedToMarkup $ foo
+      jsAttr $ H.preEscapedToMarkup $ visualiser
       where langStr = (case lang of 
                             Elm -> "elm"
                             Javascript -> "js")
-            foo =
-              concat [ "var firebaseData = new Firebase('http://sweltering-fire-9141.firebaseio.com/dissertation/"
+            visualiser =
+              concat [ "var firebaseData = new Firebase('"
+                      , "http://sweltering-fire-9141.firebaseio.com/"
+                      , "dissertation/"
                       , langStr
                       , "/"
                       , participant
@@ -158,11 +158,15 @@ embedee lang elmSrc participant =
 		              , "      y: 0"
 	                  , "  }"
                       , "});"
-                      , "firebaseData.on('child_added', function(snapshot) {"
+                      , "firebaseData.on('child_added'," 
+                      , "function(snapshot) {"
 	                  , "elm.ports.stamped.send(snapshot.val());"
                       , "});" ]
             oldID = mkRegex "var user_id = \"1\";"
-            newID = "var user_id = \"" ++ langStr ++ "/" ++ participant ++ "\";"
+            newID = "var user_id = \"" ++ langStr 
+                                       ++ "/" 
+                                       ++ participant 
+                                       ++ "\";"
             jsAttr = H.script ! A.type_ "text/javascript"
 
 embedMe :: Lang -> String -> H.Html -> String -> H.Html
