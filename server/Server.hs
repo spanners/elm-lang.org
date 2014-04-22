@@ -90,7 +90,7 @@ logAndServeHtml (html, Just err) =
 embedHtml :: MonadSnap m => H.Html -> Lang -> String -> m ()
 embedHtml html lang participant =
     do elmSrc <- liftIO $ case lang of
-                               Elm -> readFile "EmbedMe.elm"
+                               Elm -> readFile "EmbedMeElm.elm"
                                Javascript -> readFile "EmbedMeJS.elm"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml (embedMe elmSrc html participant))
@@ -146,7 +146,7 @@ embedee elmSrc participant =
                       (Generate.addSpaces line)
                       >> H.br)
                   (lines err)
-      script "/moose.js"
+      script "/fullScreenEmbedMe.js"
   where oldID = mkRegex "var user_id = \"1\";"
         newID = "var user_id = " ++ participant ++ "+'';"
         jsAttr = H.script ! A.type_ "text/javascript"
