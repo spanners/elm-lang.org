@@ -90,7 +90,7 @@ embedHtml :: MonadSnap m => H.Html -> Lang -> String -> m ()
 embedHtml html lang participant =
     do elmSrc <- liftIO $ case lang of
                                Elm -> readFile "EmbedMeElm.elm"
-                               Javascript -> readFile "EmbedMeJS.elm"
+                               Javascript -> readFile "EmbedMeElm.elm"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml (embedMe lang elmSrc html participant))
 
@@ -141,16 +141,17 @@ embedee lang elmSrc participant =
                       (Generate.addSpaces line)
                       >> H.br)
                   (lines err)
-      jsAttr $ H.preEscapedToMarkup $ foo (case lang of
-                         Elm -> "elm"
-                         Javascript -> "js")
-      where foo langStr =
+      jsAttr $ H.preEscapedToMarkup $ foo
+      where langStr = (case lang of 
+                            Elm -> "elm"
+                            Javascript -> "js")
+            foo =
               concat [ "var firebaseData = new Firebase('http://sweltering-fire-9141.firebaseio.com/dissertation/"
                       , langStr
                       , "/"
                       , participant
                       , "');"
-                      , "var elm = Elm.fullscreen(Elm.StampTogether, {"
+                      , "var elm = Elm.fullscreen(Elm.EmbedMe, {"
 	                  , "stamped: {"
 		              , "      t: 0,"
 		              , "      x: 0,"
@@ -161,7 +162,7 @@ embedee lang elmSrc participant =
 	                  , "elm.ports.stamped.send(snapshot.val());"
                       , "});" ]
             oldID = mkRegex "var user_id = \"1\";"
-            newID = "var user_id = " ++ participant ++ "+'';"
+            newID = "var user_id = \"" ++ langStr ++ "/" ++ participant ++ "\";"
             jsAttr = H.script ! A.type_ "text/javascript"
 
 embedMe :: Lang -> String -> H.Html -> String -> H.Html
