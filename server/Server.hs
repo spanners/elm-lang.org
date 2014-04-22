@@ -110,8 +110,12 @@ compile :: Lang -> Snap ()
 compile lang = maybe error404 serve =<< getParam "input"
     where
       serve = case lang of 
-                   Elm -> logAndServeHtml . Generate.logAndHtml "Compiled Elm" . BSC.unpack
-                   Javascript -> logAndServeJS . Generate.logAndJS "Compiled JS" . BSC.unpack
+                   Elm -> logAndServeHtml 
+                            . Generate.logAndHtml "Compiled Elm" 
+                            . BSC.unpack
+                   Javascript -> logAndServeJS 
+                                   . Generate.logAndJS "Compiled JS" 
+                                   . BSC.unpack
 
 edit :: Lang -> Snap ()
 edit lang = do
@@ -136,7 +140,11 @@ embedee elmSrc participant =
             jsAttr $ H.preEscapedToMarkup (subRegex oldID jsSrc newID)
         Left err ->
             H.span ! A.style "font-family: monospace;" $
-            mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
+            mapM_ (\line -> 
+                      H.preEscapedToMarkup 
+                      (Generate.addSpaces line) 
+                      >> H.br) 
+                  (lines err)
       script "/moose.js"
   where oldID = mkRegex "var user_id = \"1\";"
         newID = "var user_id = " ++ participant ++ "+'';"
@@ -144,18 +152,20 @@ embedee elmSrc participant =
         script jsFile = jsAttr ! A.src jsFile $ mempty
 
 embedMe :: String -> H.Html -> String -> H.Html
-embedMe elmSrc target participant = target >> embedee elmSrc participant
+embedMe elmSrc target participant = target >> embedee 
+                                              elmSrc 
+                                              participant
 
-embedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang -> String -> Snap ()
+embedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang 
+                                                        -> String 
+                                                        -> Snap ()
 embedWithFile handler lang participant = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
   let file = "public/" ++ path         
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
-         case lang of
-              Elm -> embedHtml (handler lang path content) lang participant
-              Javascript -> embedHtml (handler lang path content) lang participant
+         embedHtml (handler lang path content) lang participant
     
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
@@ -202,16 +212,22 @@ precompile :: IO ()
 precompile =
   do setCurrentDirectory "public"
      files <- getFiles True ".elm" "."
-     forM_ files $ \file -> rawSystem "elm" ["--make","--runtime=/elm-runtime.js",file]
+     forM_ files $ \file -> 
+                     rawSystem "elm" [ "--make"
+                                     , "--runtime=/elm-runtime.js"
+                                     , file ]
      htmls <- getFiles False ".html" "build"
      mapM_ adjustHtmlFile htmls
      setCurrentDirectory ".."
   where
     getFiles :: Bool -> String -> FilePath -> IO [FilePath]
     getFiles skip ext directory = 
-        if skip && "build" `elem` map FP.dropTrailingPathSeparator (FP.splitPath directory)
+        if skip && "build" `elem` map FP.dropTrailingPathSeparator 
+                                      (FP.splitPath directory)
           then return [] else
-          (do contents <- map (directory </>) `fmap` getDirectoryContents directory
+          (do contents <- map (directory </>) `fmap` 
+                                                getDirectoryContents 
+                                                directory
               let files = filter ((ext==) . FP.takeExtension) contents
                   directories  = filter (not . FP.hasExtension) contents
               filess <- mapM (getFiles skip ext) directories
@@ -237,7 +253,9 @@ style =
     \  a:visited {text-decoration: none}\n\
     \  a:active {text-decoration: none}\n\
     \  a:hover {text-decoration: underline; color: rgb(234,21,122);}\n\
-    \  body { font-family: \"Lucida Grande\",\"Trebuchet MS\",\"Bitstream Vera Sans\",Verdana,Helvetica,sans-serif !important; }\n\
+    \  body { font-family: \"Lucida Grande\",\
+    \ \"Trebuchet MS\",\"Bitstream Vera Sans\",Verdana,Helvetica,\
+    \ sans-serif !important; }\n\
     \  p, li { font-size: 14px !important;\n\
     \          line-height: 1.5em !important; }\n\
     \</style>"
