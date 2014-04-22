@@ -1,35 +1,36 @@
 {-# OPTIONS_GHC -W #-}
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings  #-}
 module Main where
 
-import Data.Monoid (mempty)
-import Data.Maybe (fromMaybe)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as BSC
-import qualified Data.HashMap.Strict as Map
-import qualified Elm.Internal.Utils as Elm
-import Control.Applicative
-import Control.Monad.Error
+import           Control.Applicative
+import           Control.Monad.Error
+import qualified Data.ByteString               as BS
+import qualified Data.ByteString.Char8         as BSC
+import qualified Data.HashMap.Strict           as Map
+import           Data.Maybe                    (fromMaybe)
+import           Data.Monoid                   (mempty)
+import qualified Elm.Internal.Utils            as Elm
 
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html.Renderer.Utf8 as BlazeBS
-import Text.Regex
+import           Text.Blaze.Html5              ((!))
+import qualified Text.Blaze.Html5              as H
+import qualified Text.Blaze.Html5.Attributes   as A
+import           Text.Regex
 
-import Snap.Core
-import Snap.Http.Server
-import Snap.Util.FileServe
-import System.Console.CmdArgs
-import System.FilePath as FP
-import System.Process
-import System.Directory
-import GHC.Conc
+import           GHC.Conc
+import           Snap.Core
+import           Snap.Http.Server
+import           Snap.Util.FileServe
+import           System.Console.CmdArgs
+import           System.Directory
+import           System.FilePath               as FP
+import           System.Process
 
-import qualified Elm.Internal.Paths as Elm
-import qualified Generate
 import qualified Editor
-import Utils( Lang(..) )
+import qualified Elm.Internal.Paths            as Elm
+import qualified Generate
+import           Utils                         (Lang (..))
 
 data Flags = Flags
   { port :: Int
@@ -53,7 +54,7 @@ main = do
       ifTop (serveElm "public/Empty.elm")
       <|> route [ ("try", serveHtml Editor.empty)
                 , ("edit", edit Elm)
-                , ("_edit", edit Javascript) 
+                , ("_edit", edit Javascript)
                 , ("code", code Elm)
                 , ("_code", code Javascript)
                 , ("compile", compile Elm)
@@ -73,22 +74,22 @@ serveElm :: FilePath -> Snap ()
 serveElm = serveFileAs "text/html; charset=UTF-8"
 
 logAndServeJS :: MonadSnap m => H.Html -> m ()
-logAndServeJS = serveHtml 
+logAndServeJS = serveHtml
 
 logAndServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
 logAndServeHtml (html, Nothing)  = serveHtml html
 logAndServeHtml (html, Just err) =
     do timeStamp <- liftIO $ readProcess "date" ["--rfc-3339=ns"] ""
-       liftIO $ appendFile "error_log.json" $ "{\"" ++ init timeStamp 
-                                                    ++ "\"," 
-                                                    ++ show (lines err) 
+       liftIO $ appendFile "error_log.json" $ "{\"" ++ init timeStamp
+                                                    ++ "\","
+                                                    ++ show (lines err)
                                                     ++ "},"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
 
 embedHtml :: MonadSnap m => H.Html -> Lang -> String -> m ()
 embedHtml html lang participant =
-    do elmSrc <- liftIO $ case lang of 
+    do elmSrc <- liftIO $ case lang of
                                Elm -> readFile "EmbedMe.elm"
                                Javascript -> readFile "EmbedMeJS.elm"
        setContentType "text/html" <$> getResponse
@@ -109,12 +110,12 @@ hotswap = maybe error404 serve =<< getParam "input"
 compile :: Lang -> Snap ()
 compile lang = maybe error404 serve =<< getParam "input"
     where
-      serve = case lang of 
-                   Elm -> logAndServeHtml 
-                            . Generate.logAndHtml "Compiled Elm" 
+      serve = case lang of
+                   Elm -> logAndServeHtml
+                            . Generate.logAndHtml "Compiled Elm"
                             . BSC.unpack
-                   Javascript -> logAndServeJS 
-                                   . Generate.logAndJS "Compiled JS" 
+                   Javascript -> logAndServeJS
+                                   . Generate.logAndJS "Compiled JS"
                                    . BSC.unpack
 
 edit :: Lang -> Snap ()
@@ -122,7 +123,7 @@ edit lang = do
   participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
   cols <- BSC.unpack . fromMaybe "50%,50%" <$> getQueryParam "cols"
   case lang of
-       Elm -> withFile (Editor.ide Elm cols participant) 
+       Elm -> withFile (Editor.ide Elm cols participant)
        Javascript -> withFile (Editor.ide Javascript cols participant)
 
 code :: Lang -> Snap ()
@@ -140,10 +141,10 @@ embedee elmSrc participant =
             jsAttr $ H.preEscapedToMarkup (subRegex oldID jsSrc newID)
         Left err ->
             H.span ! A.style "font-family: monospace;" $
-            mapM_ (\line -> 
-                      H.preEscapedToMarkup 
-                      (Generate.addSpaces line) 
-                      >> H.br) 
+            mapM_ (\line ->
+                      H.preEscapedToMarkup
+                      (Generate.addSpaces line)
+                      >> H.br)
                   (lines err)
       script "/moose.js"
   where oldID = mkRegex "var user_id = \"1\";"
@@ -152,25 +153,25 @@ embedee elmSrc participant =
         script jsFile = jsAttr ! A.src jsFile $ mempty
 
 embedMe :: String -> H.Html -> String -> H.Html
-embedMe elmSrc target participant = target >> embedee 
-                                              elmSrc 
+embedMe elmSrc target participant = target >> embedee
+                                              elmSrc
                                               participant
 
-embedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang 
-                                                        -> String 
+embedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang
+                                                        -> String
                                                         -> Snap ()
 embedWithFile handler lang participant = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
-  let file = "public/" ++ path         
+  let file = "public/" ++ path
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
          embedHtml (handler lang path content) lang participant
-    
+
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
-  let file = "public/" ++ path         
+  let file = "public/" ++ path
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
@@ -179,13 +180,16 @@ withFile handler = do
 directoryConfig :: MonadSnap m => DirectoryConfig m
 directoryConfig =
     fancyDirectoryConfig
-    { indexGenerator = defaultIndexGenerator defaultMimeTypes indexStyle
+    { indexGenerator = defaultIndexGenerator 
+                         defaultMimeTypes 
+                         indexStyle
     , mimeTypes = Map.insert ".elm" "text/html" defaultMimeTypes
     }
 
 indexStyle :: BS.ByteString
 indexStyle =
-    "body { margin:0; font-family:sans-serif; background:rgb(245,245,245);\
+    "body { margin:0; font-family:sans-serif; \
+    \       background:rgb(245,245,245);\
     \       font-family: calibri, verdana, helvetica, arial; }\
     \div.header { padding: 40px 50px; font-size: 24px; }\
     \div.content { padding: 0 40px }\
@@ -207,12 +211,13 @@ setupLogging =
         exists <- doesFileExist path
         unless exists $ BS.writeFile path ""
 
--- | Compile all of the Elm files in public/, placing results in public/build/
+-- | Compile all of the Elm files in public/, 
+--   placing results in public/build/
 precompile :: IO ()
 precompile =
   do setCurrentDirectory "public"
      files <- getFiles True ".elm" "."
-     forM_ files $ \file -> 
+     forM_ files $ \file ->
                      rawSystem "elm" [ "--make"
                                      , "--runtime=/elm-runtime.js"
                                      , file ]
@@ -221,12 +226,12 @@ precompile =
      setCurrentDirectory ".."
   where
     getFiles :: Bool -> String -> FilePath -> IO [FilePath]
-    getFiles skip ext directory = 
-        if skip && "build" `elem` map FP.dropTrailingPathSeparator 
+    getFiles skip ext directory =
+        if skip && "build" `elem` map FP.dropTrailingPathSeparator
                                       (FP.splitPath directory)
           then return [] else
-          (do contents <- map (directory </>) `fmap` 
-                                                getDirectoryContents 
+          (do contents <- map (directory </>) `fmap`
+                                                getDirectoryContents
                                                 directory
               let files = filter ((ext==) . FP.takeExtension) contents
                   directories  = filter (not . FP.hasExtension) contents
@@ -247,7 +252,7 @@ adjustHtmlFile file =
      removeFile file
 
 style :: BSC.ByteString
-style = 
+style =
     "<style type=\"text/css\">\n\
     \  a:link {text-decoration: none; color: rgb(15,102,230);}\n\
     \  a:visited {text-decoration: none}\n\
