@@ -3,6 +3,7 @@
 module Main where
 
 import Data.Monoid (mempty)
+import Data.Maybe (fromMaybe)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BSC
 import qualified Data.HashMap.Strict as Map
@@ -78,7 +79,10 @@ logAndServeHtml :: MonadSnap m => (H.Html, Maybe String) -> m ()
 logAndServeHtml (html, Nothing)  = serveHtml html
 logAndServeHtml (html, Just err) =
     do timeStamp <- liftIO $ readProcess "date" ["--rfc-3339=ns"] ""
-       liftIO $ appendFile "error_log.json" $ "{\"" ++ (init timeStamp) ++ "\"," ++ (show (lines err)) ++ "},"
+       liftIO $ appendFile "error_log.json" $ "{\"" ++ init timeStamp 
+                                                    ++ "\"," 
+                                                    ++ show (lines err) 
+                                                    ++ "},"
        setContentType "text/html" <$> getResponse
        writeLBS (BlazeBS.renderHtml html)
 
@@ -120,53 +124,44 @@ compile = maybe error404 serve =<< getParam "input"
 
 edit :: Snap ()
 edit = do
-  participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
+  participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
+  cols <- BSC.unpack . fromMaybe "50%,50%" <$> getQueryParam "cols"
   withFile (Editor.ide Elm cols participant) 
 
 jsEdit :: Snap ()
 jsEdit = do
-  participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
+  participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
+  cols <- BSC.unpack . fromMaybe "50%,50%" <$> getQueryParam "cols"
   withFile (Editor.ide Javascript cols participant)
 
 code :: Snap ()
 code = do
-  participant <- BSC.unpack . maybe "" id <$> getParam "p"
+  participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
   embedWithFile Editor.editor Elm participant
 
 jsCode :: Snap ()
 jsCode = do
-  participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  jsEmbedWithFile Editor.editor Javascript participant
+  participant <- BSC.unpack . fromMaybe "" <$> getParam "p"
+  embedWithFile Editor.editor Javascript participant
 
 embedee :: String -> String -> H.Html
 embedee elmSrc participant =
     H.span $ do
       case Elm.compile elmSrc of
-        Right jsSrc -> do
+        Right jsSrc ->
             embed $ H.preEscapedToMarkup (subRegex oldID jsSrc newID)
         Left err ->
             H.span ! A.style "font-family: monospace;" $
             mapM_ (\line -> H.preEscapedToMarkup (Generate.addSpaces line) >> H.br) (lines err)
       script "/moose.js"
   where oldID = mkRegex "var user_id = \"1\";"
-        newID = ("var user_id = " ++ participant ++ "+'';" :: String)
+        newID = "var user_id = " ++ participant ++ "+'';"
         jsAttr = H.script ! A.type_ "text/javascript"
         script jsFile = jsAttr ! A.src jsFile $ mempty
-        embed jsCode = jsAttr $ jsCode
+        embed = jsAttr
 
 embedMe :: String -> H.Html -> String -> H.Html
-embedMe elmSrc target participant = target >> (embedee elmSrc participant)
-
-jsEmbedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang -> String -> Snap ()
-jsEmbedWithFile handler lang participant = do
-  path <- BSC.unpack . rqPathInfo <$> getRequest
-  let file = "public/" ++ path         
-  exists <- liftIO (doesFileExist file)
-  if not exists then error404 else
-      do content <- liftIO $ readFile file
-         embedJS (handler lang path content) participant
+embedMe elmSrc target participant = target >> embedee elmSrc participant
 
 embedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang -> String -> Snap ()
 embedWithFile handler lang participant = do
@@ -175,7 +170,9 @@ embedWithFile handler lang participant = do
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
-         embedHtml (handler lang path content) participant
+         case lang of
+              Elm -> embedHtml (handler lang path content) participant
+              Javascript -> embedJS (handler lang path content) participant
     
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
@@ -215,7 +212,7 @@ setupLogging =
     where
       createIfMissing path = do
         exists <- doesFileExist path
-        when (not exists) $ BS.writeFile path ""
+        unless exists $ BS.writeFile path ""
 
 -- | Compile all of the Elm files in public/, placing results in public/build/
 precompile :: IO ()
