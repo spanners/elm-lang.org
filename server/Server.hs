@@ -28,6 +28,7 @@ import GHC.Conc
 import qualified Elm.Internal.Paths as Elm
 import qualified Generate
 import qualified Editor
+import Utils( Lang(..) )
 
 data Flags = Flags
   { port :: Int
@@ -121,23 +122,23 @@ edit :: Snap ()
 edit = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
-  withFile (Editor.ide cols participant) 
+  withFile (Editor.ide Elm cols participant) 
 
 jsEdit :: Snap ()
 jsEdit = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
   cols <- BSC.unpack . maybe "50%,50%" id <$> getQueryParam "cols"
-  withFile (Editor.jsIde cols participant)
+  withFile (Editor.ide Javascript cols participant)
 
 code :: Snap ()
 code = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  embedWithFile Editor.editor participant
+  embedWithFile Editor.editor Elm participant
 
 jsCode :: Snap ()
 jsCode = do
   participant <- BSC.unpack . maybe "" id <$> getParam "p"
-  jsEmbedWithFile Editor.jsEditor participant
+  jsEmbedWithFile Editor.editor Javascript participant
 
 embedee :: String -> String -> H.Html
 embedee elmSrc participant =
@@ -158,23 +159,23 @@ embedee elmSrc participant =
 embedMe :: String -> H.Html -> String -> H.Html
 embedMe elmSrc target participant = target >> (embedee elmSrc participant)
 
-jsEmbedWithFile :: (FilePath -> String -> H.Html) -> String -> Snap ()
-jsEmbedWithFile handler participant = do
+jsEmbedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang -> String -> Snap ()
+jsEmbedWithFile handler lang participant = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
   let file = "public/" ++ path         
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
-         embedJS (handler path content) participant
+         embedJS (handler lang path content) participant
 
-embedWithFile :: (FilePath -> String -> H.Html) -> String -> Snap ()
-embedWithFile handler participant = do
+embedWithFile :: (Lang -> FilePath -> String -> H.Html) -> Lang -> String -> Snap ()
+embedWithFile handler lang participant = do
   path <- BSC.unpack . rqPathInfo <$> getRequest
   let file = "public/" ++ path         
   exists <- liftIO (doesFileExist file)
   if not exists then error404 else
       do content <- liftIO $ readFile file
-         embedHtml (handler path content) participant
+         embedHtml (handler lang path content) participant
     
 withFile :: (FilePath -> String -> H.Html) -> Snap ()
 withFile handler = do
