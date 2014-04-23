@@ -1,6 +1,4 @@
-{- 
-
-Try moving the square around with your keyboard's arrow keys
+{- Try moving the square around with your keyboard's arrow keys
 
 Click your mouse over there =====> 
 Use arrows Up, Down, Left, Right
@@ -8,9 +6,7 @@ Use arrows Up, Down, Left, Right
 Whee!
 
 Now modify the code to prevent the square from going outside 
-the edge of the grey window.
-
--}
+the edge of the grey window. -}
 
 import Keyboard
 
