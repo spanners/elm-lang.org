@@ -25,6 +25,7 @@ box.beginFill(COLORS[1], 0);
 box.drawRect(0, 0, SQUARE, SQUARE);
 box.endFill();
 stage.addChild(box);
+
 box.x = (WIDTH / 2) - (SQUARE / 2);
 box.y = (HEIGHT / 2) - (SQUARE / 2);
 
