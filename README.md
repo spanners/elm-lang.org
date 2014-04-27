@@ -1,45 +1,118 @@
-# Performing User Studies with the Elm IDE
+Welcome to the elm-lang.org README!
+-----------------------------------
 
-This project extends the elm-lang.org IDE with the ability to embed arbitrary Elm code in the editor pane.
 
-I have done this for a personal project -- my [undergraduate dissertation](https://github.com/spanners/dissertation).
+Installation
+============
 
-EmbedMe.elm shows an example of some Elm code embedded in the editor pane that tracks the user's mouse position on mouse-down, which can be useful to model user behaviour during the activity of programming.
+See INSTALL for installation instructions
 
-## NB: A lot of this code is by [Evan Czaplicki](https://github.com/evancz)
 
-I merely extended it to add embedding Elm code in the editor, and input logging
+How do I run user experiments?
+==============================
 
-### Set up
+After installing elm, elm-server, and building the executable, and
+running ./run-elm-server, navigate to one of the following URLs to
+see the user experiment interface in action:
 
-First make sure that you have the Elm compiler installed
-([directions](https://github.com/evancz/Elm#elm)).
+* Elm task: http://0.0.0.0:8000/edit/task/MovingBox.elm
+* JS task : http://0.0.0.0:8000/_edit/task/MovingBox.js
 
-Then follow these steps to get the website running locally:
+By default, clicks that occur in the code pane are saved to this 
+json file:
 
-```bash
-git clone https://github.com/spanners/elm-lang.org
-cd elm-lang.org
-cabal install --bindir=.
-./run-elm-website
-```
+`https://sweltering-fire-9141.firebaseio.com/dissertation.json`
 
-Great! You should be set up with [elm-lang.org](http://elm-lang.org/) running at
-[localhost:8000/](http://localhost:8000/).
+*See the section 'Tracking user input' for customisation*
 
-You can run `cabal clean` to clear out all cached build information and start fresh.
+If you  write your own tasks, visiting `/edit/<path/to/task>` will 
+populate the click databse elm directory with click data as you use 
+it, for your task.
 
-### Project Structure
+Furthermore, appending `?p=<participant-id>` allows you to annotate
+the data with the particular participant performing those clicks.
 
-- `public/` &mdash; all of the .elm files used for the site. This makes up the
-  majority of client-side code.  You can change/delete the existing files and
-  add entirely new files. The changes, deletions, and additions will be served
-  automatically.
+If you host the elm environment on a server on the Internet, you can
+send the link to your tasks to participants with a separate
 
-- `resources/` &mdash; the various resources needed for Elm. This is where you
-  put all of your non-Elm content, like images, videos, JavaScript code, etc.
+Example:
 
-- `server/` &mdash; the Haskell files responsible for serving everything from
-  .elm files to images. Look here if you need to change how a particular
-  resource is served or if you want to disable some of the sites features (such
-  as the online editor).
+`http://my.server.com:8000/edit/task/MyTask.elm?p=42`
+
+Send that to participant 42 and the firebase database will save to
+
+`https://sweltering-fire-9141-firebaseio.com/dissertation/elm/42.json`
+
+
+How do I visualise the click data?
+==================================
+
+Navigate to the root directory where the elm-lang.org was installed
+
+`$ cd elm-lang.org/`
+
+then open `EmbedMe.elm` with your favourite text editor, and 
+uncomment the line:
+
+`-- main = lift2 scene Window.dimensions Mouse.position`
+
+by removing the `-- ` (`--` is a comment in Elm)
+
+
+How do I save to my own Firebase (or other Database)
+====================================================
+
+Currently, EmbedElm only supports databases with a 
+RESTful API.
+
+If you have a databse with a RESTful API, do as follows:
+
+As in the section "How do I visualise the click data?", open 
+`EmbedMe.elm` and change 
+`https://sweltering-fire-9141-firebaseio.com/` to your own
+personal database.
+
+You must also modify the same URL in 
+`elm-lang.org/server/Server.hs`. Go to the function `embedee` 
+and where the variable `visualiser` is defined:
+
+	visualiser = 
+	  concat [ "var firebaseData = new Firebase('"
+	         , "http://sweltering-fire-9141.firebaseio.com/"
+		 , "dissertation/
+		 , langStr
+        ...
+
+and change the URL to your own.
+
+
+How do I add support for my own languages?
+==========================================
+
+Currently, the IDE only supports Elm and Javascript, but if you are
+feeling adventurous, and would like to add support for more, you will 
+need to modify at least the following code:
+
+* The `data Lang` type constructor
+
+* All functions with Lang in the type signature, e.g.
+
+   `embedee :: Lang -> String -> String -> H.Html`
+
+* The URL routing in `elm-lang.org/server/Server.hs`, e.g.
+
+   ~~~~~~~~~~{.haskell}
+   main = do
+      ...
+      <|> route [ ("try", serveHtml Editor.empty)
+                , ("edit", edit Elm)
+   	     , ("_edit", edit Javascript)
+   	     , ("__edit", edit MyLanguage)
+   	     , ("code", code Elm)
+   	     , ("_code", code Javascript)
+   	     , ("__code", code MyLanguage)
+   	     , ("compile", compile Elm)
+   	     , ("_compile", compile Javascript)
+   	     , ("__compile", compile MyLanguage)
+   ...
+   ~~~~~~~~~~~~~~~~~~~~
