@@ -1,5 +1,13 @@
-Welcome to the elm-lang.org README!
------------------------------------
+README
+------
+
+This is a heavily modified version of 
+
+https://github.com/elm-lang/elm-lang.org
+
+for my undergrad dissertation, available here:
+
+https://github.com/spanners/dissertation
 
 
 Installation
@@ -23,7 +31,8 @@ json file:
 
 `https://sweltering-fire-9141.firebaseio.com/dissertation.json`
 
-*See the section 'Tracking user input' for customisation*
+*See the section 'How do I save to my own Firebase?' for 
+customisation*
 
 If you  write your own tasks, visiting `/edit/<path/to/task>` will 
 populate the click databse elm directory with click data as you use 
@@ -59,8 +68,8 @@ uncomment the line:
 by removing the `-- ` (`--` is a comment in Elm)
 
 
-How do I save to my own Firebase (or other Database)
-====================================================
+How do I save to my own Firebase (or other Database)?
+=====================================================
 
 Currently, EmbedElm only supports databases with a 
 RESTful API.
