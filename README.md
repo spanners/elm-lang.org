@@ -1,13 +1,5 @@
-README
-------
-
-This is a heavily modified version of 
-
-https://github.com/elm-lang/elm-lang.org
-
-for my undergrad dissertation, available here:
-
-https://github.com/spanners/dissertation
+Welcome to the elm-lang.org README!
+-----------------------------------
 
 
 Installation
@@ -35,14 +27,14 @@ json file:
 customisation*
 
 If you  write your own tasks, visiting `/edit/<path/to/task>` will 
-populate the click databse elm directory with click data as you use 
+populate the click database elm directory with click data as you use 
 it, for your task.
 
 Furthermore, appending `?p=<participant-id>` allows you to annotate
 the data with the particular participant performing those clicks.
 
 If you host the elm environment on a server on the Internet, you can
-send the link to your tasks to participants with a separate
+send the link to your tasks to participants with a separate participant ID.
 
 Example:
 
@@ -68,8 +60,8 @@ uncomment the line:
 by removing the `-- ` (`--` is a comment in Elm)
 
 
-How do I save to my own Firebase (or other Database)?
-=====================================================
+How do I save to my own Firebase (or other Database)
+====================================================
 
 Currently, EmbedElm only supports databases with a 
 RESTful API.
